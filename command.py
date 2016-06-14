@@ -1,24 +1,34 @@
 from connect import *
 import sys
+import os
 import getpass
 
 class Command(object):
     """
-    Creates new Connection object on creation
+    Creates new Connection object, sets local directory
     """
     def __init__(self):
         self.connection = Connection()
+        self.current_dir = os.getcwd()
 
     def dir_cmd(self, cmd):
         """
         Directs a given command to the appropriate action
         """
-        cmd = self.parse_cmd(cmd)
-        if cmd['cmd'] == 'open':
-            self.open(cmd['args'])
-        elif cmd['cmd'] == 'close':
+        parsed_cmd = self.parse_cmd(cmd)
+        cmd = parsed_cmd['cmd']
+        args = parsed_cmd['args']
+        if cmd == 'open':
+            self.open(args)
+        elif cmd == 'close':
             self.close()
-        elif cmd['cmd'] == 'quit':
+        elif cmd == 'cd':
+            self.change_dir(args)
+        elif cmd == 'cdup':
+            self.up_dir()
+        elif cmd == 'pwd':
+            self.print_dir()
+        elif cmd == 'quit':
             self.quit()
         else:
             return False
@@ -64,13 +74,45 @@ class Command(object):
         """
         Calls for server connection close
         """
-        if self.connection.connected:
+        if self.check_connection():
             # Logsout of the server and closes the connection
             self.connection.send_request('QUIT')
             self.connection.get_response()
             self.connection.f_close()
+
+    def change_dir(self, args):
+        """
+        Sends a request to change the current working directory on the server
+        """
+        if self.check_connection():
+            self.connection.send_request('CWD ' + args)
+            self.connection.get_response()
+
+    def up_dir(self):
+        """
+        Sends a request to change the current working directory on the server to the parent folder
+        """
+        if self.check_connection():
+            self.connection.send_request('CDUP')
+            self.connection.get_response()
+
+    def print_dir(self):
+        """
+        Sends a request for the current working directory on the server
+        """
+        if self.check_connection():
+            self.connection.send_request('PWD')
+            self.connection.get_response()
+
+    def check_connection(self):
+        """
+        Checks if there is a server connection, prints error message if not
+        """
+        if self.connection.connected:
+            return True
         else:
-            print "You have no open connections."
+            print "You are not connected to a server."
+            return False
 
     def quit(self):
         """
