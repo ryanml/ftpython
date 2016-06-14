@@ -5,54 +5,57 @@ class Connection(object):
     # Default FTP port is 21
     PORT = 21
 
-    def __init__(self, host, username, password):
+    def __init__(self):
         """
-        Constructor takes in a host, username, and password
+        Constructor sets connected to false
         """
-        # Get the actual host if just given a domain
-        self.host = socket.gethostbyname(host)
-        self.username = username
-        self.password = password
+        self.connected = False
+
+    def f_connect(self, host):
+        """
+        Connects to server given a host
+        """
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # This will become true when we authenticate to the server
-        self.auth = False
-        # Connect
-        self.f_connect()
-
-    def f_connect(self):
-        """
-        Connects to server, handles the stream
-        """
+        self.host = socket.gethostbyname(host)
         self.server.connect((self.host, self.PORT))
-        while 1:
-            # Call parse_stream and print stream message
-            stream = self.parse_stream(self.server.recv(1024))
-            print stream['message']
-            # If we haven't authed yet, call auth
-            if not self.auth:
-                self.send_auth(stream['message'])
+        response = self.wait_for_response()
+        if response['code'] == '220':
+            self.connected = True
 
-    def parse_stream(self,stream):
+    def f_close(self):
+        """
+        Closes connection to server
+        """
+        self.server.close()
+        self.connected = False
+
+    def send_request(self, request):
+        """
+        Sends request to server
+        """
+        request = request.strip()
+        self.server.send(request + '\r\n')
+
+    def wait_for_response(self):
+        """
+        Waits for the next response from the server, returns it
+        """
+        found_response = False
+        s_file = self.server.makefile('rb')
+        while not found_response:
+            for line in s_file:
+                found_response = True
+                print line
+                s_file.close()
+                return self.parse_response(line)
+
+    def parse_response(self, response):
         """
         Returns a dictionary with the 3 digit response code and message
         """
-        response_code = stream[:3]
-        message = stream[3:]
+        code = response[:3]
+        message = response[3:]
         return {
-           'response': response_code,
+           'code': code,
            'message': message
         }
-
-    def send_auth(self, stream):
-        """
-        Sends username and password to ftp server
-        """
-        self.server.send('USER ' + self.username + '\n')
-        self.server.send('PASS ' + self.password + '\n')
-        self.auth = True
-
-def main():
-    ftp_connection = Connection('some.host.name', 'user_name', 'password')
-
-if __name__ == "__main__":
-    main()
