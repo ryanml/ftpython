@@ -1,5 +1,6 @@
 from connect import *
 import sys
+import getpass
 
 class Command(object):
     """
@@ -42,8 +43,20 @@ class Command(object):
         """
         Accepts a host, calls for connect
         """
+        # Don't try to connect if a connection exists
         if not self.connection.connected:
-            self.connection.f_connect(args)
+            connect_code = self.connection.f_connect(args)
+            if connect_code == '220':
+                # Prompt for username on server's request
+                possible_user = getpass.getuser()
+                user_name = raw_input('Name(' + self.connection.host + ':' + possible_user + '): ')
+                self.connection.send_request('USER '+ user_name)
+                response = self.connection.get_response()
+                # If the user is good, prompt for password and send
+                if response['code'] == '331':
+                    password = getpass.getpass('Password: ')
+                    self.connection.send_request('PASS ' + password)
+                    response = self.connection.get_response()
         else:
             print "You are already connected to: " + self.connection.host + ", type 'close' to disconnect"
 
@@ -52,9 +65,15 @@ class Command(object):
         Calls for server connection close
         """
         if self.connection.connected:
+            # Logsout of the server and closes the connection
+            self.connection.send_request('QUIT')
+            self.connection.get_response()
             self.connection.f_close()
         else:
             print "You have no open connections."
 
     def quit(self):
+        """
+        Terminates the client
+        """
         sys.exit()

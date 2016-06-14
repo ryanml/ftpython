@@ -4,7 +4,7 @@ class Cli(object):
 
     def __init__(self):
         self.command = Command()
-        while self.c_open:
+        while True:
             self.accept_command()
 
     def accept_command(self):

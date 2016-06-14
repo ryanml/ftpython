@@ -18,9 +18,10 @@ class Connection(object):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostbyname(host)
         self.server.connect((self.host, self.PORT))
-        response = self.wait_for_response()
-        if response['code'] == '220':
+        response = self.get_response()
+        if not response['error']:
             self.connected = True
+        return response['code']
 
     def f_close(self):
         """
@@ -36,18 +37,13 @@ class Connection(object):
         request = request.strip()
         self.server.send(request + '\r\n')
 
-    def wait_for_response(self):
+    def get_response(self):
         """
-        Waits for the next response from the server, returns it
+        Receives response from server, prints and returns the parsed result
         """
-        found_response = False
-        s_file = self.server.makefile('rb')
-        while not found_response:
-            for line in s_file:
-                found_response = True
-                print line
-                s_file.close()
-                return self.parse_response(line)
+        response = self.server.recv(4096)
+        print response
+        return self.parse_response(response)
 
     def parse_response(self, response):
         """
@@ -55,7 +51,11 @@ class Connection(object):
         """
         code = response[:3]
         message = response[3:]
+        error = False
+        if code[0] == '4' or code[0] == '5':
+            error = True
         return {
            'code': code,
-           'message': message
+           'message': message,
+           'error': error
         }
