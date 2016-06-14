@@ -24,10 +24,16 @@ class Command(object):
             self.close()
         elif cmd == 'cd':
             self.change_dir(args)
+        elif cmd == 'lcd':
+            self.change_local_dir(args)
         elif cmd == 'cdup':
             self.up_dir()
         elif cmd == 'pwd':
             self.print_dir()
+        elif cmd == 'mkdir':
+            self.make_dir(args)
+        elif cmd == 'rmdir':
+            self.remove_dir(args)
         elif cmd == 'quit':
             self.quit()
         else:
@@ -88,6 +94,22 @@ class Command(object):
             self.connection.send_request('CWD ' + args)
             self.connection.get_response()
 
+    def change_local_dir(self, args):
+        """
+        Changes the current working directory on the local machine.
+        If there are no args, just print it out.
+        """
+        if args:
+            new_dir = args
+            try:
+                os.chdir(new_dir)
+                self.current_dir = os.getcwd()
+                print "Local working directory " + self.current_dir
+            except OSError:
+                print "No such file/directory '" + new_dir + "'"
+        else:
+            print "Local working directory " + self.current_dir
+
     def up_dir(self):
         """
         Sends a request to change the current working directory on the server to the parent folder
@@ -103,6 +125,26 @@ class Command(object):
         if self.check_connection():
             self.connection.send_request('PWD')
             self.connection.get_response()
+
+    def make_dir(self, args):
+        """
+        Sends a request to create a directory on the server
+        """
+        if self.check_connection():
+            self.connection.send_request('MKD ' + args)
+            self.connection.get_response()
+
+    def remove_dir(self, args):
+        """
+        Sends a request to delete a directory on the server
+        """
+        if self.check_connection():
+            rm = raw_input('Are you sure you want to remove ' + args + ' ? [Y/N]: ')
+            if rm.lower() == 'y':
+                self.connection.send_request('RMD ' + args)
+                self.connection.get_response()
+            else:
+                print "Directory not removed."
 
     def check_connection(self):
         """
