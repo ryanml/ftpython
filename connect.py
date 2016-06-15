@@ -1,5 +1,4 @@
 import socket
-import time
 
 class Connection(object):
 
@@ -17,7 +16,12 @@ class Connection(object):
         Connects to server given a host
         """
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.host = socket.gethostbyname(host)
+        # Return false if an invalid hostname has been given
+        try:
+            self.host = socket.gethostbyname(host)
+        except socket.gaierror:
+            return False
+        # Connect to given host on port
         self.server.connect((self.host, self.PORT))
         response = self.get_response()
         if not response['error']:
@@ -37,6 +41,9 @@ class Connection(object):
         """
         request = request.strip()
         self.server.send(request + '\r\n')
+
+    def send_all(self, data):
+        self.server.sendall(data)
 
     def get_response(self):
         """
@@ -78,8 +85,9 @@ class Connection(object):
         # Send command from command connection
         self.send_request(cmd)
         self.get_response()
-        # Print out response from file and command connection
-        print file_conn.recv(4096)
-        self.get_response()
+        # If the command is calling list, output file connection response. Otherwise, don't (there won't be any response)
+        if cmd == 'NLST':
+            print file_conn.recv(4096)
+            self.get_response()
         # Close the file connection
         file_conn.close()

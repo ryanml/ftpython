@@ -36,6 +36,8 @@ class Command(object):
             self.make_dir(args)
         elif cmd == 'rmdir':
             self.remove_dir(args)
+        elif cmd == 'delete':
+            self.del_file(args)
         elif cmd == 'quit':
             self.quit()
         else:
@@ -75,6 +77,8 @@ class Command(object):
                     password = getpass.getpass('Password: ')
                     self.connection.send_request('PASS ' + password)
                     response = self.connection.get_response()
+            else:
+                print "Error: " + args + " is not a valid host."
         else:
             print "You are already connected to: " + self.connection.host + ", type 'close' to disconnect"
 
@@ -155,6 +159,13 @@ class Command(object):
                 self.connection.get_response()
             else:
                 print "Directory not removed."
+
+    def del_file(self, args):
+        """
+        Deletes a specified file from the server
+        """
+        if self.check_connection():
+            pasv_con = self.connection.create_pasv_con('DELE ' + args)
 
     def check_connection(self):
         """
