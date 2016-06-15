@@ -106,7 +106,7 @@ class Command(object):
         """
         if self.check_connection():
             # Create passive connection for file operations
-            pasv_con = self.connection.create_pasv_con('NLST')
+            self.connection.create_pasv_con('NLST')
 
     def change_local_dir(self, args):
         """
@@ -153,19 +153,17 @@ class Command(object):
         Sends a request to delete a directory on the server
         """
         if self.check_connection():
-            rm = raw_input('Are you sure you want to remove ' + args + ' ? [Y/N]: ')
-            if rm.lower() == 'y':
+            if self.rm_prompt(args):
                 self.connection.send_request('RMD ' + args)
                 self.connection.get_response()
-            else:
-                print "Directory not removed."
 
     def del_file(self, args):
         """
         Deletes a specified file from the server
         """
         if self.check_connection():
-            pasv_con = self.connection.create_pasv_con('DELE ' + args)
+            if self.rm_prompt(args):
+                self.connection.create_pasv_con('DELE ' + args)
 
     def check_connection(self):
         """
@@ -175,6 +173,17 @@ class Command(object):
             return True
         else:
             print "You are not connected to a server."
+            return False
+
+    def rm_prompt(self, args):
+        """
+        Prompts user to confirm removal actions
+        """
+        rm = raw_input('Are you sure you want to remove ' + args + ' ? [Y/N]: ')
+        if rm.lower() == 'y':
+            return True
+        else:
+            print "Action not performed."
             return False
 
     def quit(self):

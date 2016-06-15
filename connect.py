@@ -85,7 +85,7 @@ class Connection(object):
         # Send command from command connection
         self.send_request(cmd)
         self.get_response()
-        # If the command is calling list, output file connection response. Otherwise, don't (there won't be any response)
+        # If the command requests a list, there will be responses to return
         if cmd == 'NLST':
             print file_conn.recv(4096)
             self.get_response()
