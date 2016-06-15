@@ -1,4 +1,5 @@
 import socket
+import time
 
 class Connection(object):
 
@@ -59,3 +60,26 @@ class Connection(object):
            'message': message,
            'error': error
         }
+
+    def create_pasv_con(self, cmd):
+        """
+        Given a response from an issued PASV command, creates a connection
+        to the specified host and port.
+        """
+        # Issue PASV command
+        self.send_request('PASV')
+        response = self.get_response()
+        # Get the host and port parameters from the response
+        params = response['message'].split('(')[1].split(')')[0].split(',')
+        file_port = (int(params[4]) * 256) + int(params[5])
+        # Set up socket connection and connect it
+        file_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        file_conn.connect((self.host, file_port))
+        # Send command from command connection
+        self.send_request(cmd)
+        self.get_response()
+        # Print out response from file and command connection
+        print file_conn.recv(4096)
+        self.get_response()
+        # Close the file connection
+        file_conn.close()

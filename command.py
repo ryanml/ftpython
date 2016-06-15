@@ -24,6 +24,8 @@ class Command(object):
             self.close()
         elif cmd == 'cd':
             self.change_dir(args)
+        elif cmd == 'ls':
+            self.list_dir()
         elif cmd == 'lcd':
             self.change_local_dir(args)
         elif cmd == 'cdup':
@@ -93,6 +95,14 @@ class Command(object):
         if self.check_connection():
             self.connection.send_request('CWD ' + args)
             self.connection.get_response()
+
+    def list_dir(self):
+        """
+        Sends a request to receive the current working directory's contents.
+        """
+        if self.check_connection():
+            # Create passive connection for file operations
+            pasv_con = self.connection.create_pasv_con('NLST')
 
     def change_local_dir(self, args):
         """
