@@ -1,6 +1,7 @@
 from connect import *
 import sys
 import os
+import subprocess
 import getpass
 
 class Command(object):
@@ -27,7 +28,9 @@ class Command(object):
         elif cmd == 'ls':
             self.list_dir()
         elif cmd == 'lcd':
-            self.change_local_dir(args)
+            self.change_loc_dir(args)
+        elif cmd == 'lds':
+            self.list_loc_dir()
         elif cmd == 'cdup':
             self.up_dir()
         elif cmd == 'pwd':
@@ -38,6 +41,8 @@ class Command(object):
             self.remove_dir(args)
         elif cmd == 'put':
             self.put_file(args)
+        elif cmd == 'get':
+            self.get_file(args)
         elif cmd == 'delete':
             self.del_file(args)
         elif cmd == 'quit':
@@ -118,7 +123,7 @@ class Command(object):
             # Close the connection
             pasv_con.close()
 
-    def change_local_dir(self, args):
+    def change_loc_dir(self, args):
         """
         Changes the current working directory on the local machine.
         If there are no args, just print it out.
@@ -133,6 +138,12 @@ class Command(object):
                 print "No such file/directory '" + new_dir + "'"
         else:
             print "Local working directory " + self.current_dir
+
+    def list_loc_dir(self):
+        """
+        Issues a shell command to get the files in the local working directory
+        """
+        subprocess.call(['ls'])
 
     def up_dir(self):
         """
@@ -178,15 +189,44 @@ class Command(object):
                 # Create passive connection and send request
                 pasv_con = self.connection.create_pasv_con()
                 self.connection.send_request('STOR ' + args)
+                self.connection.get_response()
                 # Send the file over the data connection
                 pasv_con.send(to_send.read())
                 # Close passive connection
                 pasv_con.close()
-                # Two response will be received
-                self.connection.get_response()
+                # Get the final response
                 self.connection.get_response()
             else:
                 print args + ": file does not exist"
+
+    def get_file(self, args):
+        """
+        Gets a given file from the server
+        """
+        if self.check_connection():
+            # Create passive connection and send request
+            pasv_con = self.connection.create_pasv_con()
+            self.connection.send_request('RETR ' + args)
+            # If there is no such file, close data connection and exit function
+            response = self.connection.get_response()
+            if response['code'] == '550':
+                pasv_con.close()
+                return False
+            # Open a new file on the client side
+            to_recv = open(args, 'wb')
+            while True:
+                # Receive the data on the data connection in 1024 byte increments
+                recv_data = pasv_con.recv(1024)
+                # If there is no more data, break out of the loop
+                if not recv_data:
+                    break
+                # Write the data to our file
+                to_recv.write(recv_data)
+            # Get confirmation response from server
+            self.connection.get_response()
+            # Close the file, data connection
+            to_recv.close()
+            pasv_con.close()
 
     def del_file(self, args):
         """
