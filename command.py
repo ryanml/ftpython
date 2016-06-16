@@ -36,6 +36,8 @@ class Command(object):
             self.make_dir(args)
         elif cmd == 'rmdir':
             self.remove_dir(args)
+        elif cmd == 'put':
+            self.put_file(args)
         elif cmd == 'delete':
             self.del_file(args)
         elif cmd == 'quit':
@@ -106,7 +108,15 @@ class Command(object):
         """
         if self.check_connection():
             # Create passive connection for file operations
-            self.connection.create_pasv_con('NLST')
+            pasv_con = self.connection.create_pasv_con()
+            # Send the list request
+            self.connection.send_request('NLST')
+            self.connection.get_response()
+            # Print out the stream coming in on the file connection
+            print pasv_con.recv(4096)
+            self.connection.get_response()
+            # Close the connection
+            pasv_con.close()
 
     def change_local_dir(self, args):
         """
@@ -157,13 +167,40 @@ class Command(object):
                 self.connection.send_request('RMD ' + args)
                 self.connection.get_response()
 
+    def put_file(self, args):
+        """
+        Sends a given file to the server
+        """
+        if self.check_connection():
+            if os.path.isfile(args):
+                # Open file to send
+                to_send = open(args, 'rb')
+                # Create passive connection and send request
+                pasv_con = self.connection.create_pasv_con()
+                self.connection.send_request('STOR ' + args)
+                # Send the file over the data connection
+                pasv_con.send(to_send.read())
+                # Close passive connection
+                pasv_con.close()
+                # Two response will be received
+                self.connection.get_response()
+                self.connection.get_response()
+            else:
+                print args + ": file does not exist"
+
     def del_file(self, args):
         """
         Deletes a specified file from the server
         """
         if self.check_connection():
             if self.rm_prompt(args):
-                self.connection.create_pasv_con('DELE ' + args)
+                # Create passive connection
+                pasv_con = self.connection.create_pasv_con()
+                # Send the request, receive the response
+                self.connection.send_request('DELE ' + args)
+                self.connection.get_response()
+                # Close the passive connection
+                pasv_con.close()
 
     def check_connection(self):
         """

@@ -42,9 +42,6 @@ class Connection(object):
         request = request.strip()
         self.server.send(request + '\r\n')
 
-    def send_all(self, data):
-        self.server.sendall(data)
-
     def get_response(self):
         """
         Receives response from server, prints and returns the parsed result
@@ -68,7 +65,7 @@ class Connection(object):
            'error': error
         }
 
-    def create_pasv_con(self, cmd):
+    def create_pasv_con(self):
         """
         Given a response from an issued PASV command, creates a connection
         to the specified host and port.
@@ -80,14 +77,7 @@ class Connection(object):
         params = response['message'].split('(')[1].split(')')[0].split(',')
         file_port = (int(params[4]) * 256) + int(params[5])
         # Set up socket connection and connect it
-        file_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        file_conn.connect((self.host, file_port))
-        # Send command from command connection
-        self.send_request(cmd)
-        self.get_response()
-        # If the command requests a list, there will be responses to return
-        if cmd == 'NLST':
-            print file_conn.recv(4096)
-            self.get_response()
-        # Close the file connection
-        file_conn.close()
+        file_con = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        file_con.connect((self.host, file_port))
+        # Return connection
+        return file_con
