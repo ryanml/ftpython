@@ -9,8 +9,7 @@ class Cli(object):
 
     def accept_command(self):
         cmd = raw_input('ftpython> ')
-        if not self.command.dir_cmd(cmd):
-            print 'Invalid command.'
+        self.command.dir_cmd(cmd)
 
 if __name__ == "__main__":
     Cli()

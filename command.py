@@ -19,37 +19,10 @@ class Command(object):
         parsed_cmd = self.parse_cmd(cmd)
         cmd = parsed_cmd['cmd']
         args = parsed_cmd['args']
-        if cmd == 'open':
-            self.open(args)
-        elif cmd == 'close':
-            self.close()
-        elif cmd == 'cd':
-            self.change_dir(args)
-        elif cmd == 'ls':
-            self.list_dir()
-        elif cmd == 'lcd':
-            self.change_loc_dir(args)
-        elif cmd == 'lds':
-            self.list_loc_dir()
-        elif cmd == 'cdup':
-            self.up_dir()
-        elif cmd == 'pwd':
-            self.print_dir()
-        elif cmd == 'mkdir':
-            self.make_dir(args)
-        elif cmd == 'rmdir':
-            self.remove_dir(args)
-        elif cmd == 'put':
-            self.put_file(args)
-        elif cmd == 'get':
-            self.get_file(args)
-        elif cmd == 'delete':
-            self.del_file(args)
-        elif cmd == 'quit':
-            self.quit()
-        else:
-            return False
-        return True
+        try:
+            getattr(self, cmd)(args)
+        except AttributeError:
+            print "Invalid command."
 
     def parse_cmd(self, cmd):
         """
@@ -89,7 +62,7 @@ class Command(object):
         else:
             print "You are already connected to: " + self.connection.host + ", type 'close' to disconnect"
 
-    def close(self):
+    def close(self, args):
         """
         Calls for server connection close
         """
@@ -99,7 +72,7 @@ class Command(object):
             self.connection.get_response()
             self.connection.f_close()
 
-    def change_dir(self, args):
+    def cd(self, args):
         """
         Sends a request to change the current working directory on the server
         """
@@ -107,7 +80,7 @@ class Command(object):
             self.connection.send_request('CWD ' + args)
             self.connection.get_response()
 
-    def list_dir(self):
+    def ls(self, args):
         """
         Sends a request to receive the current working directory's contents.
         """
@@ -123,7 +96,7 @@ class Command(object):
             # Close the connection
             pasv_con.close()
 
-    def change_loc_dir(self, args):
+    def lcd(self, args):
         """
         Changes the current working directory on the local machine.
         If there are no args, just print it out.
@@ -139,13 +112,17 @@ class Command(object):
         else:
             print "Local working directory " + self.current_dir
 
-    def list_loc_dir(self):
+    def lds(self, args):
         """
         Issues a shell command to get the files in the local working directory
         """
-        subprocess.call(['ls'])
+        if args == '-l':
+            flag = args
+        else:
+            flag = '-C'
+        subprocess.call(['ls', flag])
 
-    def up_dir(self):
+    def cdup(self, args):
         """
         Sends a request to change the current working directory on the server to the parent folder
         """
@@ -153,7 +130,7 @@ class Command(object):
             self.connection.send_request('CDUP')
             self.connection.get_response()
 
-    def print_dir(self):
+    def pwd(self, args):
         """
         Sends a request for the current working directory on the server
         """
@@ -161,7 +138,7 @@ class Command(object):
             self.connection.send_request('PWD')
             self.connection.get_response()
 
-    def make_dir(self, args):
+    def mkdir(self, args):
         """
         Sends a request to create a directory on the server
         """
@@ -169,7 +146,7 @@ class Command(object):
             self.connection.send_request('MKD ' + args)
             self.connection.get_response()
 
-    def remove_dir(self, args):
+    def rmdir(self, args):
         """
         Sends a request to delete a directory on the server
         """
@@ -178,7 +155,7 @@ class Command(object):
                 self.connection.send_request('RMD ' + args)
                 self.connection.get_response()
 
-    def put_file(self, args):
+    def put(self, args):
         """
         Sends a given file to the server
         """
@@ -199,7 +176,7 @@ class Command(object):
             else:
                 print args + ": file does not exist"
 
-    def get_file(self, args):
+    def get(self, args):
         """
         Gets a given file from the server
         """
@@ -228,7 +205,7 @@ class Command(object):
             to_recv.close()
             pasv_con.close()
 
-    def del_file(self, args):
+    def delete(self, args):
         """
         Deletes a specified file from the server
         """
@@ -263,7 +240,7 @@ class Command(object):
             print "Action not performed."
             return False
 
-    def quit(self):
+    def quit(self, args):
         """
         Terminates the client
         """
