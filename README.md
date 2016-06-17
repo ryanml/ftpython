@@ -27,10 +27,12 @@ The following commands are supported:
 - close
 - delete
 - get
+- help
 - lcd
 - lds (Accepts an optional '-l' flag, calls an 'ls' command on the local working directory)
 - ls
 - mkdir
+- put
 - pwd
 - rmdir
-- put
+- user

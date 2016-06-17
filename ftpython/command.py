@@ -41,7 +41,7 @@ class Command(object):
 
     def open(self, args):
         """
-        Accepts a host, calls for connect
+        Accepts a host, connects, then prompts for authentication
         """
         # Don't try to connect if a connection exists
         if not self.connection.connected:
@@ -54,9 +54,7 @@ class Command(object):
                 response = self.connection.get_response()
                 # If the user is good, prompt for password and send
                 if response['code'] == '331':
-                    password = getpass.getpass('Password: ')
-                    self.connection.send_request('PASS ' + password)
-                    response = self.connection.get_response()
+                    self.pass_prompt()
             else:
                 print "Error: " + args + " is not a valid host."
         else:
@@ -71,6 +69,26 @@ class Command(object):
             self.connection.send_request('QUIT')
             self.connection.get_response()
             self.connection.f_close()
+
+    def user(self, args):
+        """
+        Calls the user command for a given username
+        """
+        if self.check_connection():
+            self.connection.send_request('USER ' + args)
+            response = self.connection.get_response()
+            if response['code'] == '331':
+                self.pass_prompt()
+
+    def pass_prompt(self):
+        """
+        Prompts user for password
+        """
+        password = getpass.getpass('Password: ')
+        self.connection.send_request('PASS ' + password)
+        response = self.connection.get_response()
+        if response['error']:
+            print "Login failed."
 
     def cd(self, args):
         """
@@ -245,7 +263,7 @@ class Command(object):
         Prints a list of the available commands
         """
         print "Commands:\n"
-        print "cd\tcdup\tclose\ndelete\tget\tlcd\nlds\tls\tmkdir\npwd\trmdir\tput\n"
+        print "cd\tcdup\tclose\ndelete\tget\tlcd\nlds\tls\tmkdir\nput\tpwd\trmdir\nuser\n"
 
     def quit(self, args):
         """
