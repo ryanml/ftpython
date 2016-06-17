@@ -1,0 +1,4 @@
+*.py[cod]
+dist
+ftpython.egg-info
+build

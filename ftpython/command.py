@@ -240,6 +240,13 @@ class Command(object):
             print "Action not performed."
             return False
 
+    def help(self, args):
+        """
+        Prints a list of the available commands
+        """
+        print "Commands:\n"
+        print "cd\tcdup\tclose\ndelete\tget\tlcd\nlds\tls\tmkdir\npwd\trmdir\tput\n"
+
     def quit(self, args):
         """
         Terminates the client
