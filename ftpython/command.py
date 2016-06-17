@@ -11,6 +11,7 @@ class Command(object):
     def __init__(self):
         self.connection = Connection()
         self.current_dir = os.getcwd()
+        self.logged_in = False
 
     def dir_cmd(self, cmd):
         """
@@ -45,6 +46,9 @@ class Command(object):
         """
         # Don't try to connect if a connection exists
         if not self.connection.connected:
+            if not args:
+                self.usage('open some.host.name|XX.XXX.XXX.XXX')
+                return False
             connect_code = self.connection.f_connect(args)
             if connect_code == '220':
                 # Prompt for username on server's request
@@ -75,6 +79,9 @@ class Command(object):
         Calls the user command for a given username
         """
         if self.check_connection():
+            if not args:
+                self.usage('user user_name')
+                return False
             self.connection.send_request('USER ' + args)
             response = self.connection.get_response()
             if response['code'] == '331':
@@ -87,14 +94,19 @@ class Command(object):
         password = getpass.getpass('Password: ')
         self.connection.send_request('PASS ' + password)
         response = self.connection.get_response()
-        if response['error']:
+        if response['code'] == '230':
+            self.logged_in = True
+        else:
             print "Login failed."
 
     def cd(self, args):
         """
         Sends a request to change the current working directory on the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('cd some_directory')
+                return False
             self.connection.send_request('CWD ' + args)
             self.connection.get_response()
 
@@ -102,7 +114,7 @@ class Command(object):
         """
         Sends a request to receive the current working directory's contents.
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
             # Create passive connection for file operations
             pasv_con = self.connection.create_pasv_con()
             # Send the list request
@@ -144,7 +156,7 @@ class Command(object):
         """
         Sends a request to change the current working directory on the server to the parent folder
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
             self.connection.send_request('CDUP')
             self.connection.get_response()
 
@@ -152,7 +164,7 @@ class Command(object):
         """
         Sends a request for the current working directory on the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
             self.connection.send_request('PWD')
             self.connection.get_response()
 
@@ -160,7 +172,10 @@ class Command(object):
         """
         Sends a request to create a directory on the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('mkdir some_directory')
+                return False
             self.connection.send_request('MKD ' + args)
             self.connection.get_response()
 
@@ -168,7 +183,10 @@ class Command(object):
         """
         Sends a request to delete a directory on the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('rmdir some_directory')
+                return False
             if self.rm_prompt(args):
                 self.connection.send_request('RMD ' + args)
                 self.connection.get_response()
@@ -177,7 +195,10 @@ class Command(object):
         """
         Sends a given file to the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('put file.txt')
+                return False
             if os.path.isfile(args):
                 # Open file to send
                 to_send = open(args, 'rb')
@@ -198,7 +219,10 @@ class Command(object):
         """
         Gets a given file from the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('get file.txt')
+                return False
             # Create passive connection and send request
             pasv_con = self.connection.create_pasv_con()
             self.connection.send_request('RETR ' + args)
@@ -227,7 +251,10 @@ class Command(object):
         """
         Deletes a specified file from the server
         """
-        if self.check_connection():
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('delete file.txt')
+                return False
             if self.rm_prompt(args):
                 # Create passive connection
                 pasv_con = self.connection.create_pasv_con()
@@ -247,6 +274,17 @@ class Command(object):
             print "You are not connected to a server."
             return False
 
+    def check_logged_in(self):
+        """
+        Checks if the user is logged in to the server, prints error messsage
+        if not
+        """
+        if self.logged_in:
+            return True
+        else:
+            print "You are not logged in."
+            return False
+
     def rm_prompt(self, args):
         """
         Prompts user to confirm removal actions
@@ -257,6 +295,12 @@ class Command(object):
         else:
             print "Action not performed."
             return False
+
+    def usage(self, usage_str):
+        """
+        Prints the usage for a function if it was not used correctly.
+        """
+        print "Error: Proper usage is: " + usage_str
 
     def help(self, args):
         """
