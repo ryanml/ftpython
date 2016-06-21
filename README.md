@@ -22,6 +22,7 @@ You will then see this prompt for command:
 `ftpython>`
 
 The following commands are supported:
+- cat
 - cd
 - cdup
 - close

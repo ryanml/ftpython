@@ -237,6 +237,36 @@ class Command(object):
             if len(args) > 0:
                 self.mput(args)
 
+    def cat(self, args):
+        """
+        Prints out contents of given file
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args or type(args) is list:
+                self.usage('cat file.txt')
+                return False
+            c_file = args
+            # Create passive connection and send request
+            pasv_con = self.connection.create_pasv_con()
+            self.connection.send_request('RETR ' + c_file)
+            # If there is no such file, close data connection and exit function
+            response = self.connection.get_response()
+            if response['code'] == '550':
+                pasv_con.close()
+                return False
+            while True:
+                # Receive data in 1024 byte increments
+                recv_data = pasv_con.recv(1024)
+                # If there's no more data, break from loop
+                if not recv_data:
+                    break
+                # Print data to terminal
+                print recv_data
+            # Get confirmation response from server
+            self.connection.get_response()
+            # Close the file, data connection
+            pasv_con.close()
+
     def get(self, args):
         """
         Gets a given file from the server
@@ -365,7 +395,7 @@ class Command(object):
         Prints a list of the available commands
         """
         print "Commands:\n"
-        print "cd\tcdup\tclose\tdelete\nget\tlcd\tlds\tls\nmdelete\tmget\tmkdir\tmput\nput\tpwd\trmdir\tuser\n"
+        print "cat\tcd\tcdup\tclose\ndelete\tget\tlcd\tlds\nls\tmdelete\tmget\tmkdir\nmput\tput\tpwd\trmdir\nuser\n"
 
     def quit(self, args):
         """
