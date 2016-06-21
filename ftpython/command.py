@@ -32,8 +32,10 @@ class Command(object):
         """
         cmd = cmd.strip().split(' ')
         name = cmd[0]
-        if len(cmd) > 1:
+        if len(cmd) > 2:
             args = cmd[1:]
+        elif len(cmd) == 2:
+            args = cmd[1]
         else:
             args = False
         return {
@@ -47,10 +49,10 @@ class Command(object):
         """
         # Don't try to connect if a connection exists
         if not self.connection.connected:
-            if not args:
+            if not args or type(args) is list:
                 self.usage('open some.host.name|XX.XXX.XXX.XXX')
                 return False
-            connect_code = self.connection.f_connect(args[0])
+            connect_code = self.connection.f_connect(args)
             if connect_code == '220':
                 # Prompt for username on server's request
                 possible_user = getpass.getuser()
@@ -61,7 +63,7 @@ class Command(object):
                 if response['code'] == '331':
                     self.pass_prompt()
             else:
-                print "Error: " + args[0] + " is not a valid host."
+                print "Error: " + args + " is not a valid host."
         else:
             print "You are already connected to: " + self.connection.host + ", type 'close' to disconnect"
 
@@ -80,10 +82,10 @@ class Command(object):
         Calls the user command for a given username
         """
         if self.check_connection():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('user user_name')
                 return False
-            self.connection.send_request('USER ' + args[0])
+            self.connection.send_request('USER ' + args)
             response = self.connection.get_response()
             if response['code'] == '331':
                 self.pass_prompt()
@@ -105,10 +107,10 @@ class Command(object):
         Sends a request to change the current working directory on the server
         """
         if self.check_connection() and self.check_logged_in():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('cd some_directory')
                 return False
-            self.connection.send_request('CWD ' + args[0])
+            self.connection.send_request('CWD ' + args)
             self.connection.get_response()
 
     def ls(self, args):
@@ -133,7 +135,7 @@ class Command(object):
         If there are no args, just print it out.
         """
         if args:
-            new_dir = args[0]
+            new_dir = args
             try:
                 os.chdir(new_dir)
                 self.current_dir = os.getcwd()
@@ -174,10 +176,10 @@ class Command(object):
         Sends a request to create a directory on the server
         """
         if self.check_connection() and self.check_logged_in():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('mkdir some_directory')
                 return False
-            self.connection.send_request('MKD ' + args[0])
+            self.connection.send_request('MKD ' + args)
             self.connection.get_response()
 
     def rmdir(self, args):
@@ -185,11 +187,11 @@ class Command(object):
         Sends a request to delete a directory on the server
         """
         if self.check_connection() and self.check_logged_in():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('rmdir some_directory')
                 return False
             if self.m_prompt(args[0]):
-                self.connection.send_request('RMD ' + args[0])
+                self.connection.send_request('RMD ' + args)
                 self.connection.get_response()
 
     def put(self, args):
@@ -197,35 +199,10 @@ class Command(object):
         Sends a given file to the server
         """
         if self.check_connection() and self.check_logged_in():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('put file.txt')
                 return False
-            p_file = args[0]
-            if os.path.isfile(p_file):
-                # Open file to send
-                to_send = open(p_file, 'rb')
-                # Create passive connection and send request
-                pasv_con = self.connection.create_pasv_con()
-                self.connection.send_request('STOR ' + p_file)
-                self.connection.get_response()
-                # Send the file over the data connection
-                pasv_con.send(to_send.read())
-                # Close passive connection
-                pasv_con.close()
-                # Get the final response
-                self.connection.get_response()
-            else:
-                print p_file + ": file does not exist"
-
-    def mput(self, args):
-        """
-        Recursive function to upload several files
-        """
-        if self.check_connection() and self.check_logged_in():
-            if not args:
-                self.usage('mput file.txt file_two.txt ...')
-                return False
-            p_file = args[0]
+            p_file = args
             if os.path.isfile(p_file):
                 # Confirm action
                 if self.m_prompt(p_file):
@@ -243,6 +220,17 @@ class Command(object):
                     self.connection.get_response()
             else:
                 print p_file + ": file does not exist"
+
+    def mput(self, args):
+        """
+        Recursive function to upload several files
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('mput file.txt file_two.txt ...')
+                return False
+            # Call put action for first file
+            self.put(args[0])
             # Remove the last file dealt with
             args.pop(0)
             # If there are files left in args, call function again
@@ -254,45 +242,12 @@ class Command(object):
         Gets a given file from the server
         """
         if self.check_connection() and self.check_logged_in():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('get file.txt')
                 return False
-            # Create passive connection and send request
-            args = args[0]
-            pasv_con = self.connection.create_pasv_con()
-            self.connection.send_request('RETR ' + args)
-            # If there is no such file, close data connection and exit function
-            response = self.connection.get_response()
-            if response['code'] == '550':
-                pasv_con.close()
-                return False
-            # Open a new file on the client side
-            to_recv = open(args, 'wb')
-            while True:
-                # Receive the data on the data connection in 1024 byte increments
-                recv_data = pasv_con.recv(1024)
-                # If there is no more data, break out of the loop
-                if not recv_data:
-                    break
-                # Write the data to our file
-                to_recv.write(recv_data)
-            # Get confirmation response from server
-            self.connection.get_response()
-            # Close the file, data connection
-            to_recv.close()
-            pasv_con.close()
-
-    def mget(self, args):
-        """
-        Recursive function to get several files
-        """
-        if self.check_connection() and self.check_logged_in():
-            if not args:
-                self.usage('mget file.txt file_two.txt ...')
-                return False
-                # Create passive connection and send request
-            g_file = args[0]
+            g_file = args
             if self.m_prompt(g_file):
+                # Create passive connection and send request
                 pasv_con = self.connection.create_pasv_con()
                 self.connection.send_request('RETR ' + g_file)
                 # If there is no such file, close data connection and exit function
@@ -315,6 +270,17 @@ class Command(object):
                 # Close the file, data connection
                 to_recv.close()
                 pasv_con.close()
+
+    def mget(self, args):
+        """
+        Recursive function to get several files
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('mget file.txt file_two.txt ...')
+                return False
+            # Call delete action for first file
+            self.get(args[0])
             # Remove the last file dealt with
             args.pop(0)
             # If there are files left in args, call function again
@@ -326,10 +292,9 @@ class Command(object):
         Deletes a specified file from the server
         """
         if self.check_connection() and self.check_logged_in():
-            if not args:
+            if not args or type(args) is list:
                 self.usage('delete file.txt')
                 return False
-            args = args[0]
             if self.m_prompt(args):
                 # Create passive connection
                 pasv_con = self.connection.create_pasv_con()
@@ -347,16 +312,8 @@ class Command(object):
             if not args:
                 self.usage('mdelete file.txt file_two.txt ...')
                 return False
-            d_file = args[0]
-            # Confirm action
-            if self.m_prompt(d_file):
-                # Create passive connection
-                pasv_con = self.connection.create_pasv_con()
-                # Send the request, receive the response
-                self.connection.send_request('DELE ' + d_file)
-                self.connection.get_response()
-                # Close the passive connection
-                pasv_con.close()
+            # Call delete action
+            self.delete(args[0])
             # Remove the last file dealt with
             args.pop(0)
             # If there are files left in args, call function again
