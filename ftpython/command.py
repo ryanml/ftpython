@@ -282,6 +282,45 @@ class Command(object):
             to_recv.close()
             pasv_con.close()
 
+    def mget(self, args):
+        """
+        Recursive function to get several files
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('mget file.txt file_two.txt ...')
+                return False
+                # Create passive connection and send request
+            g_file = args[0]
+            if self.m_prompt(g_file):
+                pasv_con = self.connection.create_pasv_con()
+                self.connection.send_request('RETR ' + g_file)
+                # If there is no such file, close data connection and exit function
+                response = self.connection.get_response()
+                if response['code'] == '550':
+                    pasv_con.close()
+                    return False
+                # Open a new file on the client side
+                to_recv = open(g_file, 'wb')
+                while True:
+                    # Receive the data on the data connection in 1024 byte increments
+                    recv_data = pasv_con.recv(1024)
+                    # If there is no more data, break out of the loop
+                    if not recv_data:
+                        break
+                    # Write the data to our file
+                    to_recv.write(recv_data)
+                # Get confirmation response from server
+                self.connection.get_response()
+                # Close the file, data connection
+                to_recv.close()
+                pasv_con.close()
+            # Remove the last file dealt with
+            args.pop(0)
+            # If there are files left in args, call function again
+            if len(args) > 0:
+                self.mget(args)
+
     def delete(self, args):
         """
         Deletes a specified file from the server
@@ -299,6 +338,30 @@ class Command(object):
                 self.connection.get_response()
                 # Close the passive connection
                 pasv_con.close()
+
+    def mdelete(self, args):
+        """
+        Recursive function to delete several files
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args:
+                self.usage('mdelete file.txt file_two.txt ...')
+                return False
+            d_file = args[0]
+            # Confirm action
+            if self.m_prompt(d_file):
+                # Create passive connection
+                pasv_con = self.connection.create_pasv_con()
+                # Send the request, receive the response
+                self.connection.send_request('DELE ' + d_file)
+                self.connection.get_response()
+                # Close the passive connection
+                pasv_con.close()
+            # Remove the last file dealt with
+            args.pop(0)
+            # If there are files left in args, call function again
+            if len(args) > 0:
+                self.mdelete(args)
 
     def check_connection(self):
         """
@@ -345,7 +408,7 @@ class Command(object):
         Prints a list of the available commands
         """
         print "Commands:\n"
-        print "cd\tcdup\tclose\ndelete\tget\tlcd\nlds\tls\tmkdir\nmput\tput\tpwd\nrmdir\tuser\n"
+        print "cd\tcdup\tclose\tdelete\nget\tlcd\tlds\tls\nmdelete\tmget\tmkdir\tmput\nput\tpwd\trmdir\tuser\n"
 
     def quit(self, args):
         """

@@ -31,6 +31,8 @@ The following commands are supported:
 - lcd
 - lds (Accepts an optional '-l' flag, calls an 'ls' command on the local working directory)
 - ls
+- mdelete
+- mget
 - mkdir
 - mput
 - put
