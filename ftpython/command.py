@@ -171,6 +171,19 @@ class Command(object):
             self.connection.send_request('PWD')
             self.connection.get_response()
 
+    def size(self, args):
+        """
+        Sends a request for the file size of a file on the server
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args or type(args) is list:
+                self.usage('size file.txt')
+                return False
+            self.connection.send_request('SIZE ' + args)
+            # Put response in to a more readable format
+            response = self.connection.get_response(True)
+            print 'Size:' + response['message'].strip('\r\n') + ' bytes'
+
     def mkdir(self, args):
         """
         Sends a request to create a directory on the server
@@ -236,6 +249,25 @@ class Command(object):
             # If there are files left in args, call function again
             if len(args) > 0:
                 self.mput(args)
+
+    def rename(self, args):
+        """
+        Renames a given file on the server
+        """
+        if self.check_connection() and self.check_logged_in():
+            if not args or len(args) != 2:
+                self.usage('rename old_name.txt new_name.txt')
+                return False
+            # Tell the server what file is being renamed
+            self.connection.send_request('RNFR ' + args[0])
+            response = self.connection.get_response()
+            # Check to see if the file is okay to be renamed
+            if response['code'] == '350':
+                # Send rename to command with new file name
+                self.connection.send_request('RNTO ' + args[1])
+                self.connection.get_response()
+            else:
+                print "File not renamed."
 
     def cat(self, args):
         """
@@ -395,7 +427,7 @@ class Command(object):
         Prints a list of the available commands
         """
         print "Commands:\n"
-        print "cat\tcd\tcdup\tclose\ndelete\tget\tlcd\tlds\nls\tmdelete\tmget\tmkdir\nmput\tput\tpwd\trmdir\nuser\n"
+        print "cat\tcd\tcdup\tclose\ndelete\tget\tlcd\tlds\nls\tmdelete\tmget\tmkdir\nmput\tput\tpwd\trename\nrmdir\tsize\tuser\n"
 
     def quit(self, args):
         """

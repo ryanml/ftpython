@@ -38,5 +38,7 @@ The following commands are supported:
 - mput
 - put
 - pwd
+- rename
 - rmdir
+- size
 - user

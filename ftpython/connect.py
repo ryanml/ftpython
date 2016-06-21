@@ -42,12 +42,13 @@ class Connection(object):
         request = request.strip()
         self.server.send(request + '\r\n')
 
-    def get_response(self):
+    def get_response(self, *no_print):
         """
         Receives response from server, prints and returns the parsed result
         """
         response = self.server.recv(4096)
-        print response
+        if not no_print:
+            print response
         return self.parse_response(response)
 
     def parse_response(self, response):
