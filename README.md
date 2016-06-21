@@ -32,6 +32,7 @@ The following commands are supported:
 - lds (Accepts an optional '-l' flag, calls an 'ls' command on the local working directory)
 - ls
 - mkdir
+- mput
 - put
 - pwd
 - rmdir
