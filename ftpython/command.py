@@ -7,11 +7,12 @@ import inspect
 
 class Command(object):
     """
-    Creates new Connection object, sets local directory
+    Creates new Connection object, sets local directory, transfer type
     """
     def __init__(self):
         self.connection = Connection()
         self.current_dir = os.getcwd()
+        self.transfer_type = ('I', 'binary')
         self.logged_in = False
 
     def dir_cmd(self, cmd):
@@ -62,6 +63,12 @@ class Command(object):
                 # If the user is good, prompt for password and send
                 if response['code'] == '331':
                     self.pass_prompt()
+                    # Check if log in is good, then set transfer type to binary
+                    if self.logged_in:
+                        self.connection.send_request('TYPE I')
+                        self.connection.get_response(True)
+                        self.type('')
+
             else:
                 print "Error: " + args + " is not a valid host."
         else:
@@ -382,6 +389,35 @@ class Command(object):
             if len(args) > 0:
                 self.mdelete(args)
 
+    def type(self, args):
+        """
+        Returns current transfer mode
+        """
+        if self.check_connection() and self.check_logged_in():
+            print "Using " + self.transfer_type[1] + " mode to transfer files."
+
+    def ascii(self, args):
+        """
+        Sets transfer type to A (ascii text)
+        """
+        if self.check_connection() and self.check_logged_in():
+            self.connection.send_request('TYPE A')
+            response = self.connection.get_response()
+            # Set global transfer type
+            if not response['error']:
+                self.transfer_type = ('A', 'ascii')
+
+    def image(self, args):
+        """
+        Sets transfer type to I (binary, for image transfer)
+        """
+        if self.check_connection() and self.check_logged_in():
+            self.connection.send_request('TYPE I')
+            response = self.connection.get_response()
+            # Set global transfer type
+            if not response['error']:
+                self.transfer_type = ('I', 'binary')
+
     def check_connection(self):
         """
         Checks if there is a server connection, prints error message if not
@@ -427,7 +463,11 @@ class Command(object):
         Prints a list of the available commands
         """
         print "Commands:\n"
-        print "cat\tcd\tcdup\tclose\ndelete\tget\tlcd\tlds\nls\tmdelete\tmget\tmkdir\nmput\tput\tpwd\trename\nrmdir\tsize\tuser\n"
+        print """\tascii\tcat\tcd\tcdup\tclose
+        delete\tget\thelp\timage\tlcd
+        lds\tls\tmdelete\tmget\tmkdir
+        mput\tput\tpwd\trename\trmdir
+        size\ttype\tuser\n"""
 
     def quit(self, args):
         """

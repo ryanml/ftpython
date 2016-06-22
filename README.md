@@ -22,6 +22,7 @@ You will then see this prompt for command:
 `ftpython>`
 
 The following commands are supported:
+- ascii
 - cat
 - cd
 - cdup
@@ -29,6 +30,7 @@ The following commands are supported:
 - delete
 - get
 - help
+- image
 - lcd
 - lds (Accepts an optional '-l' flag, calls an 'ls' command on the local working directory)
 - ls
@@ -41,4 +43,5 @@ The following commands are supported:
 - rename
 - rmdir
 - size
+- type
 - user
