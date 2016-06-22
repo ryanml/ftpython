@@ -131,14 +131,16 @@ class Command(object):
         if self.check_connection() and self.check_logged_in():
             # Create passive connection for file operations
             pasv_con = self.connection.create_pasv_con()
-            # Send the list request
-            self.connection.send_request('NLST')
-            self.connection.get_response()
-            # Print out the stream coming in on the file connection
-            print pasv_con.recv(4096)
-            self.connection.get_response()
-            # Close the connection
-            pasv_con.close()
+            # Check if connection is good
+            if pasv_con:
+                # Send the list request
+                self.connection.send_request('NLST')
+                self.connection.get_response()
+                # Print out the stream coming in on the file connection
+                print pasv_con.recv(4096)
+                self.connection.get_response()
+                # Close the connection
+                pasv_con.close()
 
     def lcd(self, args):
         """
@@ -234,14 +236,16 @@ class Command(object):
                     to_send = open(p_file, 'rb')
                     # Create passive connection and send request
                     pasv_con = self.connection.create_pasv_con()
-                    self.connection.send_request('STOR ' + p_file)
-                    self.connection.get_response()
-                    # Send the file over the data connection
-                    pasv_con.send(to_send.read())
-                    # Close passive connection
-                    pasv_con.close()
-                    # Get the final response
-                    self.connection.get_response()
+                    # Check if connection is good
+                    if pasv_con:
+                        self.connection.send_request('STOR ' + p_file)
+                        self.connection.get_response()
+                        # Send the file over the data connection
+                        pasv_con.send(to_send.read())
+                        # Close passive connection
+                        pasv_con.close()
+                        # Get the final response
+                        self.connection.get_response()
             else:
                 print p_file + ": file does not exist"
 
@@ -291,24 +295,26 @@ class Command(object):
             c_file = args
             # Create passive connection and send request
             pasv_con = self.connection.create_pasv_con()
-            self.connection.send_request('RETR ' + c_file)
-            # If there is no such file, close data connection and exit function
-            response = self.connection.get_response()
-            if response['code'] == '550':
+            # Check if connection is good
+            if pasv_con:
+                self.connection.send_request('RETR ' + c_file)
+                # If there is no such file, close data connection and exit function
+                response = self.connection.get_response()
+                if response['code'] == '550':
+                    pasv_con.close()
+                    return False
+                while True:
+                    # Receive data in 1024 byte increments
+                    recv_data = pasv_con.recv(1024)
+                    # If there's no more data, break from loop
+                    if not recv_data:
+                        break
+                    # Print data to terminal
+                    print recv_data
+                # Get confirmation response from server
+                self.connection.get_response()
+                # Close the file, data connection
                 pasv_con.close()
-                return False
-            while True:
-                # Receive data in 1024 byte increments
-                recv_data = pasv_con.recv(1024)
-                # If there's no more data, break from loop
-                if not recv_data:
-                    break
-                # Print data to terminal
-                print recv_data
-            # Get confirmation response from server
-            self.connection.get_response()
-            # Close the file, data connection
-            pasv_con.close()
 
     def get(self, args):
         """
@@ -322,27 +328,29 @@ class Command(object):
             if self.m_prompt(g_file):
                 # Create passive connection and send request
                 pasv_con = self.connection.create_pasv_con()
-                self.connection.send_request('RETR ' + g_file)
-                # If there is no such file, close data connection and exit function
-                response = self.connection.get_response()
-                if response['code'] == '550':
+                # Check if connection is good
+                if pasv_con:
+                    self.connection.send_request('RETR ' + g_file)
+                    # If there is no such file, close data connection and exit function
+                    response = self.connection.get_response()
+                    if response['code'] == '550':
+                        pasv_con.close()
+                        return False
+                    # Open a new file on the client side
+                    to_recv = open(g_file, 'wb')
+                    while True:
+                        # Receive the data on the data connection in 1024 byte increments
+                        recv_data = pasv_con.recv(1024)
+                        # If there is no more data, break out of the loop
+                        if not recv_data:
+                            break
+                        # Write the data to our file
+                        to_recv.write(recv_data)
+                    # Get confirmation response from server
+                    self.connection.get_response()
+                    # Close the file, data connection
+                    to_recv.close()
                     pasv_con.close()
-                    return False
-                # Open a new file on the client side
-                to_recv = open(g_file, 'wb')
-                while True:
-                    # Receive the data on the data connection in 1024 byte increments
-                    recv_data = pasv_con.recv(1024)
-                    # If there is no more data, break out of the loop
-                    if not recv_data:
-                        break
-                    # Write the data to our file
-                    to_recv.write(recv_data)
-                # Get confirmation response from server
-                self.connection.get_response()
-                # Close the file, data connection
-                to_recv.close()
-                pasv_con.close()
 
     def mget(self, args):
         """
@@ -371,11 +379,13 @@ class Command(object):
             if self.m_prompt(args):
                 # Create passive connection
                 pasv_con = self.connection.create_pasv_con()
-                # Send the request, receive the response
-                self.connection.send_request('DELE ' + args)
-                self.connection.get_response()
-                # Close the passive connection
-                pasv_con.close()
+                # Check if connection is good
+                if pasv_con:
+                    # Send the request, receive the response
+                    self.connection.send_request('DELE ' + args)
+                    self.connection.get_response()
+                    # Close the passive connection
+                    pasv_con.close()
 
     def mdelete(self, args):
         """

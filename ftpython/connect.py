@@ -23,6 +23,8 @@ class Connection(object):
             return False
         # Connect to given host on port
         self.server.connect((self.host, self.PORT))
+        # Set timeout to four seconds
+        self.server.settimeout(4)
         response = self.get_response()
         if not response['error']:
             self.connected = True
@@ -46,10 +48,14 @@ class Connection(object):
         """
         Receives response from server, prints and returns the parsed result
         """
-        response = self.server.recv(4096)
-        if not no_print:
-            print response
-        return self.parse_response(response)
+        try:
+            response = self.server.recv(4096)
+            if not no_print:
+                print response
+            return self.parse_response(response)
+        except socket.timeout:
+            print "Timeout error, connection closed"
+            self.f_close()
 
     def parse_response(self, response):
         """
@@ -74,6 +80,9 @@ class Connection(object):
         # Issue PASV command
         self.send_request('PASV')
         response = self.get_response()
+        # Return False if there is no response
+        if not response:
+            return False
         # Get the host and port parameters from the response
         params = response['message'].split('(')[1].split(')')[0].split(',')
         file_port = (int(params[4]) * 256) + int(params[5])
