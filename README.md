@@ -38,6 +38,7 @@ The following commands are supported:
 - mget
 - mkdir
 - mput
+- prompt
 - put
 - pwd
 - rename

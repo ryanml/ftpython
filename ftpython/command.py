@@ -7,13 +7,15 @@ import inspect
 
 class Command(object):
     """
-    Creates new Connection object, sets local directory, transfer type
+    Creates new connection object, sets default modes
     """
     def __init__(self):
         self.connection = Connection()
         self.current_dir = os.getcwd()
         self.transfer_type = ('I', 'binary')
         self.logged_in = False
+        # Interaction is off by default (user prompts for actions)
+        self.interactive = False
 
     def dir_cmd(self, cmd):
         """
@@ -68,6 +70,8 @@ class Command(object):
                         self.connection.send_request('TYPE I')
                         self.connection.get_response(True)
                         self.type('')
+                        # Turn on interactive mode
+                        self.interactive = True
 
             else:
                 print "Error: " + args + " is not a valid host."
@@ -389,6 +393,17 @@ class Command(object):
             if len(args) > 0:
                 self.mdelete(args)
 
+    def prompt(self, args):
+        """
+        Toggles interactive mode
+        """
+        if self.interactive:
+            self.interactive = False
+            print "Interactive mode off."
+        else:
+            self.interactive = True
+            print "Interactive mode on."
+
     def type(self, args):
         """
         Returns current transfer mode
@@ -443,6 +458,9 @@ class Command(object):
         """
         Prompts user to confirm removal actions
         """
+        # If interactive mode is off, return True without Prompts
+        if not self.interactive:
+            return True
         # Get the caller functions name, this will be the action name
         action = inspect.stack()[1][3]
         rm = raw_input(action + ' ' + args + '? [Y/N]: ')
@@ -466,8 +484,8 @@ class Command(object):
         print """\tascii\tcat\tcd\tcdup\tclose
         delete\tget\thelp\timage\tlcd
         lds\tls\tmdelete\tmget\tmkdir
-        mput\tput\tpwd\trename\trmdir
-        size\ttype\tuser\n"""
+        mput\tprompt\tput\tpwd\trename
+        rmdirsize\ttype\tuser\n"""
 
     def quit(self, args):
         """
