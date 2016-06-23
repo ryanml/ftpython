@@ -4,6 +4,7 @@ import os
 import subprocess
 import getpass
 import inspect
+import glob
 
 class Command(object):
     """
@@ -259,11 +260,14 @@ class Command(object):
             if not args:
                 self.usage('mput file.txt file_two.txt ...')
                 return False
-            # Call put action for first file
-            self.put(args[0])
-            # Remove the last file dealt with
+            # Get a list of the files to put using glob
+            p_files = glob.glob(args[0])
+            # Call put action for the file glob
+            for p_file in p_files:
+                self.put(p_file)
+            # Remove the argument dealt with
             args.pop(0)
-            # If there are files left in args, call function again
+            # If there are arguments left, call function again
             if len(args) > 0:
                 self.mput(args)
 
