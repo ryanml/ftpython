@@ -292,7 +292,7 @@ class Command(object):
 
     def cat(self, args):
         """
-        Prints out contents of given file
+        Prints out contents of given file on the remote server
         """
         if self.check_connection() and self.check_logged_in():
             if not args or type(args) is list:
@@ -322,6 +322,21 @@ class Command(object):
             self.connection.get_response()
             # Close the file, data connection
             pasv_con.close()
+
+    def lcat(self, args):
+        """
+        Calls the cat command on a local file
+        """
+        if not args or type(args) is list:
+            self.usage('lcat file.txt')
+            return False
+        c_file = args
+        if os.path.isfile(c_file):
+            print "\n"
+            subprocess.call(['cat', c_file])
+            print "\n"
+        else:
+            print c_file + ": is not a file"
 
     def get(self, args):
         """
