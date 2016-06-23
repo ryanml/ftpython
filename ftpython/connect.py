@@ -23,8 +23,8 @@ class Connection(object):
             return False
         # Connect to given host on port
         self.server.connect((self.host, self.PORT))
-        # Set timeout to four seconds
-        self.server.settimeout(4)
+        # Set socket timeout to 15 seconds
+        self.server.settimeout(15)
         response = self.get_response()
         if not response['error']:
             self.connected = True
