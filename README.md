@@ -31,6 +31,7 @@ The following commands are supported:
 - get
 - help
 - image
+- lcat
 - lcd
 - lds (Accepts an optional '-l' flag, calls an 'ls' command on the local working directory)
 - ls
@@ -43,6 +44,7 @@ The following commands are supported:
 - pwd
 - rename
 - rmdir
+- shell
 - size
 - type
 - user

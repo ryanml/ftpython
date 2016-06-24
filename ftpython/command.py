@@ -29,6 +29,8 @@ class Command(object):
             getattr(self, cmd)(args)
         except AttributeError:
             print "Invalid command."
+        except TypeError:
+            print "Invalid command"
 
     def parse_cmd(self, cmd):
         """
@@ -467,6 +469,20 @@ class Command(object):
             if not response['error']:
                 self.transfer_type = ('I', 'binary')
 
+    def shell(self, args):
+        """
+        Issues the arguments as a shell command
+        """
+        if not args:
+            self.usage('shell some_shell_command')
+            return False
+        if type(args) is not list:
+            args = [args]
+        try:
+            subprocess.call(args)
+        except OSError:
+            print "Shell command not valid."
+
     def check_connection(self):
         """
         Checks if there is a server connection, prints error message if not
@@ -516,10 +532,11 @@ class Command(object):
         """
         print "Commands:\n"
         print """\tascii\tcat\tcd\tcdup\tclose
-        delete\tget\thelp\timage\tlcd
-        lds\tls\tmdelete\tmget\tmkdir
-        mput\tprompt\tput\tpwd\trename
-        rmdirsize\ttype\tuser\n"""
+        delete\tget\thelp\timage\tlcat
+        lcd\tlds\tls\tmdelete\tmget
+        mkdir\tmput\tprompt\tput\tpwd
+        rename\trmdir\tsize\tshell\ttype
+        user\n"""
 
     def quit(self, args):
         """
