@@ -1,1 +1,1 @@
-__all__ = ['ftpython', 'command', 'connect', 'setup']
+__all__ = ['ftpython', 'functions', 'command', 'connect', 'setup']

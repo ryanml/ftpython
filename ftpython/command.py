@@ -18,37 +18,6 @@ class Command(object):
         # Interaction is on by default (user prompts for actions)
         self.interactive = True
 
-    def dir_cmd(self, cmd):
-        """
-        Directs a given command to the appropriate action
-        """
-        parsed_cmd = self.parse_cmd(cmd)
-        cmd = parsed_cmd['cmd']
-        args = parsed_cmd['args']
-        try:
-            getattr(self, cmd)(args)
-        except AttributeError:
-            print "Invalid command."
-        except TypeError:
-            print "Invalid command"
-
-    def parse_cmd(self, cmd):
-        """
-        Returns a dictionary with a command name and the following args
-        """
-        cmd = cmd.strip().split(' ')
-        name = cmd[0]
-        if len(cmd) > 2:
-            args = cmd[1:]
-        elif len(cmd) == 2:
-            args = cmd[1]
-        else:
-            args = False
-        return {
-            'cmd': name,
-            'args': args
-        }
-
     def open(self, args):
         """
         Accepts a host, connects, then prompts for authentication
@@ -161,16 +130,6 @@ class Command(object):
                 print "No such file/directory '" + new_dir + "'"
         else:
             print "Local working directory " + self.current_dir
-
-    def lds(self, args):
-        """
-        Issues a shell command to get the files in the local working directory
-        """
-        if not args:
-            flag = '-C'
-        elif '-l' in args:
-            flag = '-l'
-        subprocess.call(['ls', flag])
 
     def cdup(self, args):
         """
@@ -324,21 +283,6 @@ class Command(object):
             self.connection.get_response()
             # Close the file, data connection
             pasv_con.close()
-
-    def lcat(self, args):
-        """
-        Calls the cat command on a local file
-        """
-        if not args or type(args) is list:
-            self.usage('lcat file.txt')
-            return False
-        c_file = args
-        if os.path.isfile(c_file):
-            print "\n"
-            subprocess.call(['cat', c_file])
-            print "\n"
-        else:
-            print c_file + ": is not a file"
 
     def get(self, args):
         """
@@ -532,11 +476,10 @@ class Command(object):
         """
         print "Commands:\n"
         print """\tascii\tcat\tcd\tcdup\tclose
-        delete\tget\thelp\timage\tlcat
-        lcd\tlds\tls\tmdelete\tmget
-        mkdir\tmput\tprompt\tput\tpwd
-        rename\trmdir\tsize\tshell\ttype
-        user\n"""
+        delete\tget\thelp\timage\tlcd
+        ls\tmdelete\tmget\tmkdir\tmput
+        prompt\tput\tpwd\trename\trmdir
+        size\tshell\ttype\tuser\n"""
 
     def quit(self, args):
         """
