@@ -1,6 +1,7 @@
 from connect import *
 import sys
 import os
+import readline
 import subprocess
 import getpass
 import inspect
